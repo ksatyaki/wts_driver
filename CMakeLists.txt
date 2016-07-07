@@ -11,17 +11,27 @@ find_package(Boost REQUIRED COMPONENTS system)
 
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES wts_driver
+  LIBRARIES wts_driver serial_comm
   CATKIN_DEPENDS roscpp std_msgs
 )
 
-include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
+# A simple test executable.
 add_executable(simple_serial src/simple.cpp)
+target_link_libraries(simple_serial ${catkin_LIBRARIES})
 
-target_link_libraries(simple_serial
-  ${catkin_LIBRARIES}
-)
+# Serial Communication using boost.
+add_library(serial_comm src/serial_comm.cpp)
+target_link_libraries(serial_comm ${Boost_LIBRARIES})
+
+# The WTS Driver.
+add_library(wts_driver src/wts_driver.cpp)
+target_link_libraries(wts_driver serial_comm)
+
+# Test program
+add_executable(testCRC src/testCRC.cpp)
+target_link_libraries(testCRC wts_driver)
