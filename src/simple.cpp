@@ -45,6 +45,15 @@ public:
     std::flush(std::cout);
   }
 
+  void writeBytes(const uint16_t& bytes) {
+    boost::system::error_code err;
+    std::cout << "\nAttempting to send size..";
+
+    boost::asio::write(serial, boost::asio::const_buffers_1(&bytes, sizeof(bytes)), err);
+    std::cout << "\nGot error: " << err.message();
+    std::flush(std::cout);
+  }
+
   /**
    * Blocks until a line is received from the serial device.
    * Eventual '\n' or '\r\n' characters at the end of the string are removed.
@@ -87,12 +96,13 @@ int main (int argn, char* args[]) {
       serial.writeCommand(0xAA);
       serial.writeCommand(0xAA);
 
-      serial.writeCommand(0x50);
+      serial.writeCommand(0x06);
 
-      serial.writeCommand(0x00);
-      serial.writeCommand(0x00);
+      serial.writeBytes(0x01);
 
-      serial.writeCommand(0xdb);
+      serial.writeCommand(0xFF);
+
+      serial.writeCommand(0x2A);
       serial.writeCommand(0x87);
 
       //serial.writeCommand(command);

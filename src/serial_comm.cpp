@@ -26,105 +26,45 @@
 
 namespace wts {
 
-  SerialComm::SerialComm(std::string port, unsigned int baud_rate) :
-    io(),
-    serial(io,port) {
-    serial.set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
-  }
+SerialComm::SerialComm(std::string port, unsigned int baud_rate) :
+        io_service_(),
+        serial_(io_service_,port) {
+  serial_.set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
+}
+
+bool SerialComm::writeBytes (const std::vector <uint8_t>& bytesToWrite) {
+
+  boost::system::error_code err;
+
+  std::cout << "\nAttempting to send several bytes...";
+  boost::asio::write(serial_, boost::asio::const_buffer(bytesToWrite, sizeof(bytesToWrite)), err);
+
+  std::cout << "\nGot error: " << err.message();
+  // 0 is success. Return false if it is not zero.
+  if(err != 0) return false;
+  else return true;
+}
+
+bool SerialComm::readBytes (const uint32_t& noOfBytes, std::vector <uint8_t>& bytesRead) {
+
+  boost::system::error_code err;
+
+  std::cout << "\nAttempting to read" << noOfBytes << " bytes...";
+  boost::asio::read(serial_, boost::asio::buffer(bytesRead, noOfBytes), err);
+
+  std::cout << "\nGot error: " << err.message();
+  // 0 is success. Return false if it is not zero.
+  if(err != 0) return false;
+  else return true;
 
 }
 
-  /**
-   * Write a string to the serial device.
-   * \param s string to write
-   * \throws boost::system::system_error on failure
-   */
-
-  void writeCommand(uint8_t command)
-  {
-
-    boost::system::error_code err;
-
-    std::cout << "\nAttempting to send a byte...";
-
-    serial.write_some(boost::asio::buffer(&command,sizeof(uint8_t)),err);
-
-    std::cout << "\nGot error: " << err.message();
-    std::flush(std::cout);
-  }
-
-  /**
-   * Blocks until a line is received from the serial device.
-   * Eventual '\n' or '\r\n' characters at the end of the string are removed.
-   * \return a string containing the received line
-   * \throws boost::system::system_error on failure
-   */
-  boost::array<unsigned char,10> readByte()
-  {
-    //Reading data char by char, code is optimized for simplicity, not speed
-    using namespace boost;
-    boost::array<unsigned char,10> c;
-    serial.read_some(asio::buffer(&c,sizeof(c)));
-    return c;
-  }
-
-  ~SimpleSerial() {
-    serial.close();
-  }
-
-private:
-  boost::asio::io_service io;
-  boost::asio::serial_port serial;
-};
-
-int main (int argn, char* args[]) {
-
-  SimpleSerial serial("/dev/ttyACM0", 115200);
-
-  uint8_t command;
-
-  //while(true) {
-    std::cout << "\nEnter a command: ";
-    std::cin >> command;
-
-    //if(command == 0) break;
-
-    try {
-      serial.writeCommand(0xAA);
-
-      serial.writeCommand(0xAA);
-      serial.writeCommand(0xAA);
-
-      serial.writeCommand(0x50);
-
-      serial.writeCommand(0x00);
-      serial.writeCommand(0x00);
-
-      serial.writeCommand(0xdb);
-      serial.writeCommand(0x87);
-
-      //serial.writeCommand(command);
-
-
-      boost::array<unsigned char, 10>  reply;
-      reply.fill(00);
-      reply = serial.readByte();
-      std::cout << "\n Received reply: ";
-      for(int i = 0; i < 10; i++) {
-        printf("%x, ", reply[i]);
-      }
-
-
-    } catch(boost::system::system_error& e)
-    {
-      std::cout<<"\n\nError: "<<e.what()<<std::endl;
-      return 1;
-    }
- // }
-
-  std::cout << "\nBye";
-  return 0;
+SerialComm::~SerialComm() {
+  serial_.close();
 }
+
+} // namespace wts.
+
 
 
 

@@ -29,6 +29,7 @@
 namespace wts {
 
 class SerialComm {
+public:
   /**
    * Constructor.
    * \param port Device name, example "/dev/ttyACM0" or "COM4"
@@ -50,9 +51,13 @@ class SerialComm {
    * \param bytesRead The vector of bytes that were read from the serial port.
    * \returns false on failure and true on success.
    */
-  bool readBytes (std::vector <uint8_t>& bytesRead);
+  bool readBytes (const uint32_t& noOfBytes, std::vector <uint8_t>& bytesRead);
 
   ~SerialComm ();
+
+private:
+  boost::asio::io_service io_service_;
+  boost::asio::serial_port serial_;
 
 };
 
