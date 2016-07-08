@@ -4,16 +4,29 @@ project(wts_driver)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  message_generation
 )
 
-
 find_package(Boost REQUIRED COMPONENTS system)
+
+add_message_files(
+  FILES
+  Frame.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+    
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES wts_driver serial_comm
-  CATKIN_DEPENDS roscpp std_msgs
+  CATKIN_DEPENDS roscpp std_msgs message_runtime
 )
+
+
 
 include_directories(
   include

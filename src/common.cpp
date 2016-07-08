@@ -24,7 +24,7 @@
 
 #include <wts_driver/common.hpp>
 
-namespace wts {
+namespace wts_driver {
 
 std::string wts_error::message () {
 

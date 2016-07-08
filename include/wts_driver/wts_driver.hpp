@@ -24,9 +24,14 @@
 #ifndef WTS_DRIVER_WTS_DRIVER_HPP_
 #define WTS_DRIVER_WTS_DRIVER_HPP_
 
-#include <wts_driver/serial_comm.hpp>
+#include <boost/function.hpp>
 
-namespace wts {
+#include <wts_driver/serial_comm.hpp>
+#include <wts_driver/common.hpp>
+
+#include <wts_driver/Frame.h>
+
+namespace wts_driver {
 
 class WTSDriver {
 public:
@@ -55,6 +60,71 @@ private:
   static const uint16_t crc_table[256];
 
 public:
+  // -------------------------- //
+  // Data Acquisition Functions //
+  // -------------------------- //
+
+  /**
+   * Read a single frame.
+   */
+  wts_error::error_type readSingleFrame(Frame& frame, bool compression = false);
+
+  /**
+   * Start periodic acquisition of frames.
+   */
+  wts_error::error_type startPeriodicFrameAcquisition(bool compression = false, uint16_t delay_ms = 0);
+
+  /**
+   * Stop any ongoing acquisition.
+   */
+  wts_error::error_type stopPeriodicFrameAcquisition();
+
+  /**
+   * Tare sensor matrix.
+   */
+  wts_error::error_type tareSensorMatrix(bool tare = true);
+
+  /**
+   * Untare sensor matrix.
+   */
+  inline wts_error::error_type untareSensorMatrix() { return tareSensorMatrix(false); }
+
+
+  // ----------------- //
+  // Matrix management //
+  // ----------------- //
+
+  /**
+   * Get sensor type.
+   */
+  wts_error::error_type getSensorType(std::string& sensor_type);
+
+  /**
+   * Get device temperature.
+   */
+  wts_error::error_type getDeviceTemperature(int& temperature);
+
+  /**
+   * Get the system information.
+   */
+  wts_error::error_type getSystemInfo(SystemInfo& info);
+
+  /**
+   * Set device tag.
+   */
+  wts_error::error_type setDeviceTag(const std::string& tag);
+
+  /**
+   * Get device tag.
+   */
+  wts_error::error_type getDeviceTag(std::string& device_tag);
+
+  /**
+   * Test Communication interface. Uses the LOOP command to test the interface.
+   */
+  bool testCommunicationInterface();
+
+private:
 
   //TODO: Must be private. For testing only.
 

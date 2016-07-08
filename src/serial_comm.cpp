@@ -24,7 +24,7 @@
 #include <wts_driver/serial_comm.hpp>
 
 
-namespace wts {
+namespace wts_driver {
 
 SerialComm::SerialComm(std::string port, unsigned int baud_rate) :
         io_service_(),
@@ -36,8 +36,21 @@ bool SerialComm::writeBytes (const std::vector <uint8_t>& bytesToWrite) {
 
   boost::system::error_code err;
 
-  std::cout << "\nAttempting to send several bytes...";
-  boost::asio::write(serial_, boost::asio::buffer(bytesToWrite, sizeof(bytesToWrite)), err);
+  std::cout << "\nAttempting to send " << sizeof(bytesToWrite) << " bytes...";
+  boost::asio::write(serial_, boost::asio::buffer(bytesToWrite), err);
+
+  std::cout << "\nGot error: " << err.message();
+  // 0 is success. Return false if it is not zero.
+  if(err != 0) return false;
+  else return true;
+}
+
+bool SerialComm::writeConstBufferSequence (const std::vector <boost::asio::const_buffer>& buffersToWrite) {
+
+  boost::system::error_code err;
+
+  std::cout << "\nAttempting to send a packet.";
+  boost::asio::write(serial_, buffersToWrite, err);
 
   std::cout << "\nGot error: " << err.message();
   // 0 is success. Return false if it is not zero.
@@ -49,7 +62,7 @@ bool SerialComm::readBytes (const uint32_t& noOfBytes, std::vector <uint8_t>& by
 
   boost::system::error_code err;
 
-  std::cout << "\nAttempting to read" << noOfBytes << " bytes...";
+  std::cout << "\nAttempting to read " << noOfBytes << " bytes...";
   bytesRead.resize(noOfBytes);
   std::size_t s = boost::asio::read(serial_, boost::asio::buffer(bytesRead), err);
 

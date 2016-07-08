@@ -26,7 +26,9 @@
 
 #include <boost/asio.hpp>
 
-namespace wts {
+namespace wts_driver {
+
+class WTSDriver;
 
 class SerialComm {
 public:
@@ -47,6 +49,20 @@ public:
   bool writeBytes (const std::vector <uint8_t>& bytesToWrite);
 
   /**
+   * Write any fundamental data-type to the serial port. Blocking call.
+   * \param dataToWrite The object to write to the serial port.
+   * \returns false on failure and true on success.
+   */
+  template <typename T>
+  bool writeToSerialPort (const T& dataToWrite);
+
+  /**
+   * Write a ConstBufferSequence to the serial port.
+   */
+
+  bool writeConstBufferSequence (const std::vector <boost::asio::const_buffer>& buffersToWrite);
+
+  /**
    * Read a vector of bytes from the serial port - blocking call.
    * \param bytesRead The vector of bytes that were read from the serial port.
    * \returns false on failure and true on success.
@@ -55,11 +71,29 @@ public:
 
   ~SerialComm ();
 
+  friend class WTSDriver;
+
 private:
+
   boost::asio::io_service io_service_;
   boost::asio::serial_port serial_;
 
 };
+
+template <typename T>
+bool SerialComm::writeToSerialPort (const T& dataToWrite) {
+
+  boost::system::error_code err;
+
+  std::cout << "\nAttempting to send " << sizeof(dataToWrite) <<  " bytes...";
+  boost::asio::write(serial_, boost::asio::buffer(&dataToWrite, sizeof(dataToWrite)), err);
+
+  std::cout << "\nGot error: " << err.message();
+  // 0 is success. Return false if it is not zero.
+  if(err != 0) return false;
+  else return true;
+
+}
 
 
 }

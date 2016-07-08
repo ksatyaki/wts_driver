@@ -23,7 +23,7 @@
 
 #include <wts_driver/wts_driver.hpp>
 
-namespace wts {
+namespace wts_driver {
 
 const uint16_t WTSDriver::crc_table[256] = {
   0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
@@ -78,6 +78,31 @@ uint16_t WTSDriver::calculateCRC(const std::vector<uint8_t>& data, uint16_t crc_
   }
 
   return crc;
+}
+
+wts_error::error_type WTSDriver::getSensorType(std::string& sensor_type) {
+
+  // First assemble the request message.
+  std::vector <uint8_t> message;
+
+  // Preamble.
+  message.push_back(0xaa);message.push_back(0xaa);message.push_back(0xaa);
+
+  // ID
+  message.push_back(static_cast<uint8_t>(wts_command::GET_SENSOR_TYPE));
+
+  // Size
+  message.push_back(0x00);message.push_back(0x00);
+
+  uint16_t checksum = calculateCRC(message);
+
+  std::vector <boost::asio::const_buffer> bufs;
+  bufs.push_back(boost::asio::buffer(message));
+  bufs.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
+
+  serial_comm_.writeConstBufferSequence(bufs);
+
+  // Now read a reply synchronously. Note: This isn't thread safe.
 }
 
 } /* namespace wts */

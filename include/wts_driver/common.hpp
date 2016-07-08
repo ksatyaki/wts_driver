@@ -25,14 +25,16 @@
 #ifndef WTS_DRIVER_COMMON_HPP_
 #define WTS_DRIVER_COMMON_HPP_
 
-namespace wts {
+namespace wts_driver {
 
 class wts_error {
 
+public:
+
   std::string message();
 
-  enum error_type
-  {
+  enum error_type {
+
     E_SUCCESS = 0,            //!< No error
     E_NOT_AVAILABLE,          //!< Device, service or data is not available
     E_NO_SENSOR,              //!< No sensor connected
@@ -65,6 +67,54 @@ class wts_error {
     E_AXIS_BLOCKED,           //!< Axis is blocked
     E_FILE_EXISTS             //!< File already exists
   } error_type_;
+
+};
+
+class wts_command {
+
+public:
+
+  enum command_type {
+
+    // Data Acquisition
+    READ_SINGLE_FRAME = 0x20,
+    START_PERIODIC_FRAME_ACQ = 0x21,
+    STOP_PERIODIC_FRAME_ACQ = 0x22,
+    TARE_SENSOR_MATRIX = 0x23,
+
+    // Matrix Management
+    GET_MATRIX_INFO = 0x30,
+    SET_ACQ_MASK_WINDOW = 0x31,
+    SET_ADVANCED_ACQ_MASK = 0x32,
+    GET_ACQ_MASK = 0x33,
+    SET_THRESHOLD = 0x34,
+    GET_THRESHOLD = 0x35,
+    SET_FRONT_END_GAIN = 0x36,
+    GET_FRONT_END_GAIN = 0x37,
+    GET_SENSOR_TYPE = 0x38,
+
+    // System configuration and state.
+    READ_DEVICE_TEMPERATURE = 0x46,
+    GET_SYSTEM_INFO = 0x50,
+    SET_DEVICE_TAG = 0x51,
+    GET_DEVICE_TAG = 0x52,
+
+    // Connection Management
+    LOOP = 0x06
+
+  };
+
+};
+
+struct SystemInfo {
+
+  std::string type;
+
+  std::string firmware_version;
+
+  std::string hw_rev;
+
+  int serial_number;
 
 };
 
