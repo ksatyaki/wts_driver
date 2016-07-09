@@ -55,6 +55,18 @@ private:
   SerialComm& serial_comm_;
 
   /**
+   * Matrix information.
+   */
+  int resolution_x, resolution_y;
+
+  float cell_width, cell_height;
+
+  int full_scale_output;
+
+  SystemInfo system_info;
+
+
+  /**
    * The CRC table used to calculate the checksum.
    */
   static const uint16_t crc_table[256];
@@ -95,6 +107,12 @@ public:
   // ----------------- //
 
   /**
+   * Get matrix information.
+   * Saves the information in the class' members.
+   */
+  wts_error::error_type getMatrixInformation();
+
+  /**
    * Get sensor type.
    */
   wts_error::error_type getSensorType(std::string& sensor_type);
@@ -102,12 +120,12 @@ public:
   /**
    * Get device temperature.
    */
-  wts_error::error_type getDeviceTemperature(int& temperature);
+  wts_error::error_type readDeviceTemperature(int& temperature);
 
   /**
    * Get the system information.
    */
-  wts_error::error_type getSystemInfo(SystemInfo& info);
+  wts_error::error_type getSystemInformation();
 
   /**
    * Set device tag.
@@ -124,6 +142,16 @@ public:
    */
   bool testCommunicationInterface();
 
+  /**
+   * Display matrix information.
+   */
+  void displayMatrixInformation();
+
+  /**
+   * Display system information.
+   */
+  void displaySystemInformation();
+
 private:
 
   //TODO: Must be private. For testing only.
@@ -134,6 +162,16 @@ private:
    * 'param crc Value calculated over another array or start value of the crc16 calculation.
    */
   static uint16_t calculateCRC(const std::vector<uint8_t>& data, uint16_t crc_prev = 0xFFFF);
+
+  /**
+   * Append the preamble, command id and size to the vector.
+   */
+  void appendPreambleCommandSize(const wts_command::command_type cmd_type, const uint16_t size, std::vector <uint8_t>& command_message);
+
+  /**
+   * Read Acknowledge Command.
+   */
+  wts_error::error_type readAcknowledgement(const wts_command::command_type cmd_type, std::vector <uint8_t>& returned_parameters);
 
 };
 

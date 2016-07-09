@@ -80,29 +80,227 @@ uint16_t WTSDriver::calculateCRC(const std::vector<uint8_t>& data, uint16_t crc_
   return crc;
 }
 
+void WTSDriver::appendPreambleCommandSize(const wts_command::command_type cmd_type, const uint16_t size, std::vector <uint8_t>& command_message) {
+
+  /* Preamble */
+  command_message.push_back(0xaa);command_message.push_back(0xaa);command_message.push_back(0xaa);
+
+  /* ID */
+  command_message.push_back(static_cast<uint8_t>(cmd_type));
+
+  uint8_t size2 = size & 0xFF;
+  uint8_t size1 = size >> 8;
+
+  /* Size */
+  command_message.push_back(size2);command_message.push_back(size1);
+}
+
 wts_error::error_type WTSDriver::getSensorType(std::string& sensor_type) {
 
   // First assemble the request message.
-  std::vector <uint8_t> message;
+  std::vector <uint8_t> command_message;
 
-  // Preamble.
-  message.push_back(0xaa);message.push_back(0xaa);message.push_back(0xaa);
+  appendPreambleCommandSize(wts_command::GET_SENSOR_TYPE, 0x0000, command_message);
 
-  // ID
-  message.push_back(static_cast<uint8_t>(wts_command::GET_SENSOR_TYPE));
+  uint16_t checksum = calculateCRC(command_message);
 
-  // Size
-  message.push_back(0x00);message.push_back(0x00);
+  std::vector <boost::asio::const_buffer> buffersToWrite;
+  buffersToWrite.push_back(boost::asio::buffer(command_message));
+  buffersToWrite.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
 
-  uint16_t checksum = calculateCRC(message);
+  serial_comm_.writeConstBufferSequence(buffersToWrite);
 
-  std::vector <boost::asio::const_buffer> bufs;
-  bufs.push_back(boost::asio::buffer(message));
-  bufs.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
+  // Now read acknowledgement synchronously. Note: This isn't thread safe.
+  std::vector <uint8_t> returned_parameters;
+  wts_error::error_type error = readAcknowledgement(wts_command::GET_SENSOR_TYPE, returned_parameters);
+  sensor_type = std::string(returned_parameters.begin(), returned_parameters.end());
+  return error;
+}
 
-  serial_comm_.writeConstBufferSequence(bufs);
+wts_error::error_type WTSDriver::getDeviceTag(std::string& device_tag) {
 
-  // Now read a reply synchronously. Note: This isn't thread safe.
+  // First assemble the request message.
+  std::vector <uint8_t> command_message;
+
+  appendPreambleCommandSize(wts_command::GET_DEVICE_TAG, 0x0000, command_message);
+
+  uint16_t checksum = calculateCRC(command_message);
+
+  std::vector <boost::asio::const_buffer> buffersToWrite;
+  buffersToWrite.push_back(boost::asio::buffer(command_message));
+  buffersToWrite.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
+
+  serial_comm_.writeConstBufferSequence(buffersToWrite);
+
+  // Now read acknowledgement synchronously. Note: This isn't thread safe.
+  std::vector <uint8_t> returned_parameters;
+  wts_error::error_type error = readAcknowledgement(wts_command::GET_DEVICE_TAG, returned_parameters);
+  device_tag = std::string(returned_parameters.begin(), returned_parameters.end());
+  return error;
+
+}
+
+wts_error::error_type WTSDriver::readDeviceTemperature(int& temperature) {
+
+  // First assemble the request message.
+  std::vector <uint8_t> command_message;
+
+  appendPreambleCommandSize(wts_command::READ_DEVICE_TEMPERATURE, 0x0000, command_message);
+
+  uint16_t checksum = calculateCRC(command_message);
+
+  std::vector <boost::asio::const_buffer> buffersToWrite;
+  buffersToWrite.push_back(boost::asio::buffer(command_message));
+  buffersToWrite.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
+
+  serial_comm_.writeConstBufferSequence(buffersToWrite);
+
+  // Now read acknowledgement synchronously. Note: This isn't thread safe.
+  std::vector <uint8_t> returned_parameters;
+  wts_error::error_type error = readAcknowledgement(wts_command::READ_DEVICE_TEMPERATURE, returned_parameters);
+  temperature = returned_parameters[0] | (returned_parameters[1] << 8);
+  temperature /= 10;
+  return error;
+
+}
+
+wts_error::error_type WTSDriver::getSystemInformation() {
+
+  // First assemble the request message.
+  std::vector <uint8_t> command_message;
+
+  appendPreambleCommandSize(wts_command::GET_SYSTEM_INFO, 0x0000, command_message);
+
+  uint16_t checksum = calculateCRC(command_message);
+
+  std::vector <boost::asio::const_buffer> buffersToWrite;
+  buffersToWrite.push_back(boost::asio::buffer(command_message));
+  buffersToWrite.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
+
+  serial_comm_.writeConstBufferSequence(buffersToWrite);
+
+  // Now read acknowledgement synchronously. Note: This isn't thread safe.
+  std::vector <uint8_t> returned_parameters;
+  wts_error::error_type error = readAcknowledgement(wts_command::GET_SYSTEM_INFO, returned_parameters);
+
+  system_info = SystemInfo(returned_parameters);
+  return error;
+
+}
+
+wts_error::error_type WTSDriver::readSingleFrame(Frame& frame, bool compression) {
+
+  // First assemble the request message.
+  std::vector <uint8_t> command_message;
+
+  appendPreambleCommandSize(wts_command::READ_SINGLE_FRAME, 0x0000, command_message);
+
+  uint16_t checksum = calculateCRC(command_message);
+
+  std::vector <boost::asio::const_buffer> buffersToWrite;
+  buffersToWrite.push_back(boost::asio::buffer(command_message));
+  buffersToWrite.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
+
+  serial_comm_.writeConstBufferSequence(buffersToWrite);
+
+  // Now read acknowledgement synchronously. Note: This isn't thread safe.
+  std::vector <uint8_t> returned_parameters;
+  wts_error::error_type error = readAcknowledgement(wts_command::READ_SINGLE_FRAME, returned_parameters);
+
+  // TODO: Incomplete
+
+  return error;
+
+}
+
+wts_error::error_type WTSDriver::getMatrixInformation() {
+
+  // First assemble the request message.
+  std::vector <uint8_t> command_message;
+
+  appendPreambleCommandSize(wts_command::GET_MATRIX_INFO, 0x0000, command_message);
+
+  uint16_t checksum = calculateCRC(command_message);
+
+  std::vector <boost::asio::const_buffer> buffersToWrite;
+  buffersToWrite.push_back(boost::asio::buffer(command_message));
+  buffersToWrite.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
+
+  serial_comm_.writeConstBufferSequence(buffersToWrite);
+
+  // Now read acknowledgement synchronously. Note: This isn't thread safe.
+  std::vector <uint8_t> returned_parameters;
+  wts_error::error_type error = readAcknowledgement(wts_command::GET_MATRIX_INFO, returned_parameters);
+
+  resolution_x = (returned_parameters[0]) | (returned_parameters[1] << 8);
+  resolution_y = (returned_parameters[2]) | (returned_parameters[3] << 8);
+  cell_width = ( (returned_parameters[4]) | (returned_parameters[5] << 8) ) / 100000.00;
+  cell_height = ( (returned_parameters[6]) | (returned_parameters[7] << 8) ) / 100000.00;
+  full_scale_output = (returned_parameters[8]) | (returned_parameters[9] << 8);
+
+  return error;
+}
+
+void WTSDriver::displayMatrixInformation() {
+  printf("\nResolution X: %d\nResolution Y: %d\nWidth: %f m\nHeight: %f m\nFull Scale Output: %d",
+      resolution_x,
+      resolution_y,
+      cell_width,
+      cell_height,
+      full_scale_output);
+}
+
+void WTSDriver::displaySystemInformation() {
+  system_info.display();
+}
+
+
+wts_error::error_type WTSDriver::readAcknowledgement(const wts_command::command_type cmd_type, std::vector <uint8_t>& returned_parameters) {
+
+  /* First read preamble, command id and the size */
+    std::vector <uint8_t> readBytes1;
+    readBytes1.resize(6);
+
+    serial_comm_.readBytes(readBytes1);
+    wts_command::command_type cmd_id_returned = static_cast<wts_command::command_type> (readBytes1[3]);
+    uint16_t receivedSize = readBytes1[4] | (readBytes1[5] << 8);
+
+    if(cmd_id_returned != cmd_type) {
+      throw ReceivedUnexpectedCommandIDException();
+      return wts_error::E_OTHER;
+    }
+
+    // We have received the right response. Lets make sure the command succeeded.
+    uint16_t status_code;
+    serial_comm_.readFromSerialPort(status_code);
+
+    if(status_code != wts_error::E_SUCCESS) {
+      return static_cast<wts_error::error_type> (status_code);
+    }
+
+    // If we get here, we can safely read the data.
+    // We read the response alone now.
+    returned_parameters.resize(receivedSize - 2);
+    serial_comm_.readBytes(returned_parameters);
+
+    // We will read the checksum and ignore it.
+    uint16_t checksumReceived;
+    serial_comm_.readFromSerialPort(checksumReceived);
+
+
+    // We append the status code to readBytes1 for checksum computation.
+    readBytes1.push_back(status_code & 0xFF);
+    readBytes1.push_back(status_code >> 8);
+
+    uint16_t checksumComputed = calculateCRC(readBytes1);
+    checksumComputed = calculateCRC(returned_parameters, checksumComputed);
+
+    if(checksumComputed != checksumReceived) {
+      std::cout << "{WARNING}:[GET_SENSOR_TYPE]: The checksums don't match!";
+    }
+
+    return static_cast<wts_error::error_type> (status_code);
+
 }
 
 } /* namespace wts */

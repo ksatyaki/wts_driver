@@ -42,7 +42,7 @@ add_library(serial_comm src/serial_comm.cpp)
 target_link_libraries(serial_comm ${Boost_LIBRARIES})
 
 # The WTS Driver.
-add_library(wts_driver src/wts_driver.cpp)
+add_library(wts_driver src/wts_driver.cpp src/common.cpp)
 target_link_libraries(wts_driver serial_comm)
 
 # Test program

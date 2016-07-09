@@ -57,17 +57,29 @@ public:
   bool writeToSerialPort (const T& dataToWrite);
 
   /**
+    * Read any fundamental data-type from the serial port. Blocking call.
+    * \param dataToWrite The object to read from the serial port.
+    * \returns false on failure and true on success.
+    */
+   template <typename T>
+   bool readFromSerialPort (T& dataRead);
+
+  /**
    * Write a ConstBufferSequence to the serial port.
    */
-
   bool writeConstBufferSequence (const std::vector <boost::asio::const_buffer>& buffersToWrite);
+
+  /**
+   * Read a MutableBufferSequence from the serial port.
+   */
+  bool readMutableBufferSequence (std::vector <boost::asio::mutable_buffer>& buffersRead);
 
   /**
    * Read a vector of bytes from the serial port - blocking call.
    * \param bytesRead The vector of bytes that were read from the serial port.
    * \returns false on failure and true on success.
    */
-  bool readBytes (const uint32_t& noOfBytes, std::vector <uint8_t>& bytesRead);
+  bool readBytes (std::vector <uint8_t>& bytesRead);
 
   ~SerialComm ();
 
@@ -87,6 +99,21 @@ bool SerialComm::writeToSerialPort (const T& dataToWrite) {
 
   std::cout << "\nAttempting to send " << sizeof(dataToWrite) <<  " bytes...";
   boost::asio::write(serial_, boost::asio::buffer(&dataToWrite, sizeof(dataToWrite)), err);
+
+  std::cout << "\nGot error: " << err.message();
+  // 0 is success. Return false if it is not zero.
+  if(err != 0) return false;
+  else return true;
+
+}
+
+template <typename T>
+bool SerialComm::readFromSerialPort (T& dataRead) {
+
+  boost::system::error_code err;
+
+  std::cout << "\nAttempting to read " << sizeof(dataRead) <<  " bytes...";
+  boost::asio::read(serial_, boost::asio::buffer(&dataRead, sizeof(dataRead)), err);
 
   std::cout << "\nGot error: " << err.message();
   // 0 is success. Return false if it is not zero.

@@ -25,6 +25,11 @@
 #ifndef WTS_DRIVER_COMMON_HPP_
 #define WTS_DRIVER_COMMON_HPP_
 
+#include <stdint.h>
+#include <string>
+#include <vector>
+#include <stdio.h>
+
 namespace wts_driver {
 
 class wts_error {
@@ -65,7 +70,8 @@ public:
     E_OVERRUN,                //!< Data overrun
     E_RANGE_ERROR,            //!< Range error
     E_AXIS_BLOCKED,           //!< Axis is blocked
-    E_FILE_EXISTS             //!< File already exists
+    E_FILE_EXISTS,             //!< File already exists
+    E_OTHER
   } error_type_;
 
 };
@@ -116,6 +122,20 @@ struct SystemInfo {
 
   int serial_number;
 
+  void display();
+
+  SystemInfo();
+
+  SystemInfo(const std::vector <uint8_t>& data_packet);
+
+  SystemInfo(const std::string& type_, const std::string& firmware_version_, const std::string& hw_rev_, const int serial_number);
+
+};
+
+class ReceivedUnexpectedCommandIDException : std::exception {
+  virtual inline const char* what() const throw() {
+    return "Received unexpected command ID as response from the microcontroller.";
+  }
 };
 
 }

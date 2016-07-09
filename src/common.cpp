@@ -97,4 +97,43 @@ std::string wts_error::message () {
 
 }
 
+SystemInfo::SystemInfo(){}
+
+SystemInfo::SystemInfo(const std::vector <uint8_t>& data_packet) {
+
+  type = data_packet[0] == 0 ? "Unknown" : "WTS Tactile Sensor Module" ;
+
+  char hw_rev_c_str[4];
+  sprintf(hw_rev_c_str, "%hhu", data_packet[1]);
+
+  hw_rev = std::string(hw_rev_c_str);
+
+  serial_number = (data_packet[4]) | (data_packet[5] << 8) | (data_packet[6] << 16) | (data_packet[7] << 24);
+
+  uint8_t major_version = (data_packet[3] >> 4);
+  uint8_t minor_version1 = (data_packet[3] & 0x0F);
+  uint8_t minor_version2 = (data_packet[2] >> 4);
+  uint8_t version_type = (data_packet[2] & 0x0F);
+
+  char version[100];
+  sprintf(version, "%hhu.%hhu.%hhu.%hhu", major_version, minor_version1, minor_version2, version_type);
+
+  firmware_version = std::string(version);
+
+}
+
+SystemInfo::SystemInfo(const std::string& type_, const std::string& firmware_version_, const std::string& hw_rev_, const int serial_number_) :
+    type(type_),
+    firmware_version(firmware_version_),
+    hw_rev(hw_rev_),
+    serial_number(serial_number_) {
+
+}
+
+void SystemInfo::display() {
+  printf("\n%s\n%s\n%s\n%d\n", type.c_str(), firmware_version.c_str() , hw_rev.c_str(), serial_number);
+}
+
+
+
 }

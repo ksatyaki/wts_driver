@@ -1,7 +1,8 @@
 #include <wts_driver/wts_driver.hpp>
 
 int main (int argn, char* args[]) {
-  wts_driver::SerialComm sc("/dev/ttyACM0", 115200);
+
+  wts_driver::SerialComm sc(args[1], 115200);
 
   wts_driver::WTSDriver wts_driver (sc);
 
@@ -15,48 +16,22 @@ int main (int argn, char* args[]) {
   packets.push_back(0x00);
   packets.push_back(0x00);
 
-  /*
-  uint16_t checksum = wts_driver::WTSDriver::calculateCRC(packets);
-
-
-
-  printf("\nChecksum is %x", checksum);
-
-  std::vector <uint8_t> more_packets;
-
-  if(!sc.writeBytes(packets)) {
-    printf("\n Screwed.");
-  }
-  else {
-    if(!sc.writeToSerialPort(checksum)) {
-      printf("\n checksum failed.");
-    }
-    else {
-      if(!sc.readBytes(24, more_packets)) {
-        printf("\nReading screwed up.");
-      }
-      else {
-        std::cout << "\n Received reply: ";
-        int i = 0;
-        for(i = 0; i < 8; i++) {
-          printf("%x, ", more_packets[i]);
-        }
-
-        for(i = 8; i < more_packets.size() - 2; i++) {
-          printf("%c", more_packets[i]);
-        }
-
-      }
-    }
-  }
-
-  checksum = wts_driver::WTSDriver::calculateCRC(more_packets);
-  printf("\nChecksum is %x", checksum);
-
-  */
-
   std::string result;
   wts_driver.getSensorType(result);
+  std::cout << "The sensor type is: " << result;
+
+  wts_driver.getDeviceTag(result);
+  std::cout << "The device tag is: " << result;
+
+  int temperature;
+  wts_driver.readDeviceTemperature(temperature);
+  std::cout << "The device temperature is: " << temperature << "°C";
+
+  wts_driver.getSystemInformation();
+  wts_driver.displaySystemInformation();
+
+  wts_driver.getMatrixInformation();
+  wts_driver.displayMatrixInformation();
 
   return 0;
 }
