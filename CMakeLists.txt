@@ -43,8 +43,12 @@ target_link_libraries(serial_comm ${Boost_LIBRARIES})
 
 # The WTS Driver.
 add_library(wts_driver src/wts_driver.cpp src/common.cpp)
-target_link_libraries(wts_driver serial_comm)
+target_link_libraries(wts_driver serial_comm ${catkin_LIBRARIES})
 
 # Test program
 add_executable(testCRC src/testCRC.cpp)
-target_link_libraries(testCRC wts_driver)
+target_link_libraries(testCRC wts_driver ${catkin_LIBRARIES})
+
+# The driver node
+add_executable(wts_driver_node src/main.cpp)
+target_link_libraries(wts_driver_node wts_driver ${catkin_LIBRARIES})

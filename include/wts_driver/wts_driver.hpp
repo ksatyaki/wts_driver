@@ -29,6 +29,7 @@
 #include <wts_driver/serial_comm.hpp>
 #include <wts_driver/common.hpp>
 
+#include <ros/ros.h>
 #include <wts_driver/Frame.h>
 
 namespace wts_driver {
@@ -47,7 +48,17 @@ public:
    */
   virtual ~WTSDriver();
 
+  /**
+   * Initialize ros publisher.
+   */
+  void initROSPublisher(ros::NodeHandle& nh);
+
 private:
+
+  /**
+   * ROS publisher for frame information.
+   */
+  ros::Publisher frames_pub_;
 
   /**
    * A reference to a SerialComm object.
@@ -57,14 +68,27 @@ private:
   /**
    * Matrix information.
    */
-  int resolution_x, resolution_y;
+  MatrixInfo matrix_info;
 
-  float cell_width, cell_height;
-
-  int full_scale_output;
-
+  /**
+   * System information.
+   */
   SystemInfo system_info;
 
+  /**
+   * Is periodic frame acquisition on?
+   */
+  bool periodic_frame_acq_is_running;
+
+  /**
+   * A static array for async_read of preamble, command id and size.
+   */
+  boost::array <uint8_t, 6> in_preamble_cmd_size;
+
+  /**
+   * A dynamic array to hold the frame data.
+   */
+  std::vector <uint8_t> in_frame_data;
 
   /**
    * The CRC table used to calculate the checksum.
@@ -72,6 +96,8 @@ private:
   static const uint16_t crc_table[256];
 
 public:
+
+  inline bool isPeriodicFrameAcqRunning() { return periodic_frame_acq_is_running; }
   // -------------------------- //
   // Data Acquisition Functions //
   // -------------------------- //
@@ -79,27 +105,27 @@ public:
   /**
    * Read a single frame.
    */
-  wts_error::error_type readSingleFrame(Frame& frame, bool compression = false);
+  wts_error readSingleFrame(Frame& frame, const bool compression = false);
 
   /**
    * Start periodic acquisition of frames.
    */
-  wts_error::error_type startPeriodicFrameAcquisition(bool compression = false, uint16_t delay_ms = 0);
+  wts_error startPeriodicFrameAcquisition(const bool compression = false, const uint16_t delay_ms = 0);
 
   /**
    * Stop any ongoing acquisition.
    */
-  wts_error::error_type stopPeriodicFrameAcquisition();
+  wts_error stopPeriodicFrameAcquisition();
 
   /**
    * Tare sensor matrix.
    */
-  wts_error::error_type tareSensorMatrix(bool tare = true);
+  wts_error tareSensorMatrix(const bool tare = true);
 
   /**
    * Untare sensor matrix.
    */
-  inline wts_error::error_type untareSensorMatrix() { return tareSensorMatrix(false); }
+  inline wts_error untareSensorMatrix() { return tareSensorMatrix(false); }
 
 
   // ----------------- //
@@ -110,32 +136,32 @@ public:
    * Get matrix information.
    * Saves the information in the class' members.
    */
-  wts_error::error_type getMatrixInformation();
+  wts_error getMatrixInformation();
 
   /**
    * Get sensor type.
    */
-  wts_error::error_type getSensorType(std::string& sensor_type);
+  wts_error getSensorType(std::string& sensor_type);
 
   /**
    * Get device temperature.
    */
-  wts_error::error_type readDeviceTemperature(int& temperature);
+  wts_error readDeviceTemperature(int& temperature);
 
   /**
    * Get the system information.
    */
-  wts_error::error_type getSystemInformation();
+  wts_error getSystemInformation();
 
   /**
    * Set device tag.
    */
-  wts_error::error_type setDeviceTag(const std::string& tag);
+  wts_error setDeviceTag(const std::string& tag);
 
   /**
    * Get device tag.
    */
-  wts_error::error_type getDeviceTag(std::string& device_tag);
+  wts_error getDeviceTag();
 
   /**
    * Test Communication interface. Uses the LOOP command to test the interface.
@@ -154,8 +180,6 @@ public:
 
 private:
 
-  //TODO: Must be private. For testing only.
-
   /**
    * Calculate/update the crc16 value.
    * \param data vector of bytes.
@@ -172,6 +196,15 @@ private:
    * Read Acknowledge Command.
    */
   wts_error::error_type readAcknowledgement(const wts_command::command_type cmd_type, std::vector <uint8_t>& returned_parameters);
+
+  /**
+   * Serial port callback when periodic frame acquisition is enabled.
+   */
+  void preambleCommandSizeCallback(const boost::system::error_code& error);
+
+  void frameMessageCallback(const boost::system::error_code& error);
+
+  void otherMessageCallback(const boost::system::error_code& error);
 
 };
 

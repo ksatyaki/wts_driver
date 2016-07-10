@@ -74,6 +74,12 @@ public:
     E_OTHER
   } error_type_;
 
+  wts_error();
+
+  wts_error(error_type err);
+
+  bool operator == (error_type err);
+
 };
 
 class wts_command {
@@ -81,6 +87,9 @@ class wts_command {
 public:
 
   enum command_type {
+
+    // Periodic frame data.
+    FRAME_DATA = 0x00,
 
     // Data Acquisition
     READ_SINGLE_FRAME = 0x20,
@@ -114,21 +123,65 @@ public:
 
 struct SystemInfo {
 
+  /**
+   * The type of sensor. Could be unknown or WTS Sensor Module.
+   */
   std::string type;
 
+  /**
+   * The firmware version.
+   */
   std::string firmware_version;
 
+  /**
+   * The hardware revision number.
+   */
   std::string hw_rev;
 
+  /**
+   * Serial number of the device we are talking to.
+   */
   int serial_number;
 
+  /**
+   * Device tag.
+   */
+  std::string device_tag;
+
+  /**
+   * Print out this struct. Only for debugging.
+   */
   void display();
 
+  /**
+   * Empty constructor.
+   */
   SystemInfo();
 
+  /**
+   * Create a SystemInfo struct from the data packets received via serial port.
+   */
   SystemInfo(const std::vector <uint8_t>& data_packet);
 
+  /**
+   * Create a SystemInfo struct from the different parts.
+   */
   SystemInfo(const std::string& type_, const std::string& firmware_version_, const std::string& hw_rev_, const int serial_number);
+
+};
+
+struct MatrixInfo {
+
+  int resolution_x, resolution_y;
+
+  float cell_width, cell_height;
+
+  int full_scale_output;
+
+  /**
+   * Print out this struct. Only for debugging.
+   */
+  void display();
 
 };
 

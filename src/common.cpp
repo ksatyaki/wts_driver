@@ -26,6 +26,17 @@
 
 namespace wts_driver {
 
+wts_error::wts_error() {
+  error_type_ = E_SUCCESS;
+}
+
+wts_error::wts_error(error_type err) :
+          error_type_(err) {}
+
+bool wts_error::operator == (error_type err) {
+  return this->error_type_ == err;
+}
+
 std::string wts_error::message () {
 
   switch(this->error_type_) {
@@ -91,6 +102,8 @@ std::string wts_error::message () {
     return "Axis is blocked";
   case E_FILE_EXISTS:
     return "File exists";
+  case E_OTHER:
+    return "Some other type of error occured. Maybe periodic frame acquisition is running?";
   default:
     return "Unknown error";
   }
@@ -131,7 +144,16 @@ SystemInfo::SystemInfo(const std::string& type_, const std::string& firmware_ver
 }
 
 void SystemInfo::display() {
-  printf("\n%s\n%s\n%s\n%d\n", type.c_str(), firmware_version.c_str() , hw_rev.c_str(), serial_number);
+  printf("\n%s\n%s\n%s\n%d\n%s\n", type.c_str(), firmware_version.c_str() , hw_rev.c_str(), serial_number, device_tag.c_str());
+}
+
+void MatrixInfo::display() {
+  printf("\nResolution X: %d\nResolution Y: %d\nWidth: %f m\nHeight: %f m\nFull Scale Output: %d",
+      resolution_x,
+      resolution_y,
+      cell_width,
+      cell_height,
+      full_scale_output);
 }
 
 

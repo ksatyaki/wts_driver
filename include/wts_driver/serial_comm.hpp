@@ -28,8 +28,6 @@
 
 namespace wts_driver {
 
-class WTSDriver;
-
 class SerialComm {
 public:
   /**
@@ -83,7 +81,15 @@ public:
 
   ~SerialComm ();
 
-  friend class WTSDriver;
+  /**
+   * Return the serial port handle as a reference.
+   */
+  inline boost::asio::serial_port& serial() { return serial_; }
+
+  /**
+   * Return the serial port handle as a reference.
+   */
+  inline boost::asio::io_service& io_service() { return io_service_; }
 
 private:
 

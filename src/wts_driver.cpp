@@ -61,12 +61,16 @@ const uint16_t WTSDriver::crc_table[256] = {
 };
 
 WTSDriver::WTSDriver(SerialComm& serial_comm) :
-  serial_comm_(serial_comm) {
-
+  serial_comm_(serial_comm),
+  periodic_frame_acq_is_running(false) {
 
 }
 
 WTSDriver::~WTSDriver() {
+}
+
+void WTSDriver::initROSPublisher(ros::NodeHandle& nh) {
+  frames_pub_ = nh.advertise <wts_driver::Frame> (system_info.device_tag + "/frames", 10);
 }
 
 uint16_t WTSDriver::calculateCRC(const std::vector<uint8_t>& data, uint16_t crc_prev) {
@@ -95,7 +99,11 @@ void WTSDriver::appendPreambleCommandSize(const wts_command::command_type cmd_ty
   command_message.push_back(size2);command_message.push_back(size1);
 }
 
-wts_error::error_type WTSDriver::getSensorType(std::string& sensor_type) {
+wts_error WTSDriver::getSensorType(std::string& sensor_type) {
+
+  if(isPeriodicFrameAcqRunning()) {
+    return wts_error::E_OTHER;
+  }
 
   // First assemble the request message.
   std::vector <uint8_t> command_message;
@@ -113,11 +121,20 @@ wts_error::error_type WTSDriver::getSensorType(std::string& sensor_type) {
   // Now read acknowledgement synchronously. Note: This isn't thread safe.
   std::vector <uint8_t> returned_parameters;
   wts_error::error_type error = readAcknowledgement(wts_command::GET_SENSOR_TYPE, returned_parameters);
+
+  if(error != wts_error::E_SUCCESS) {
+    return error;
+  }
+
   sensor_type = std::string(returned_parameters.begin(), returned_parameters.end());
   return error;
 }
 
-wts_error::error_type WTSDriver::getDeviceTag(std::string& device_tag) {
+wts_error WTSDriver::getDeviceTag() {
+
+  if(isPeriodicFrameAcqRunning()) {
+    return wts_error::E_OTHER;
+  }
 
   // First assemble the request message.
   std::vector <uint8_t> command_message;
@@ -135,12 +152,21 @@ wts_error::error_type WTSDriver::getDeviceTag(std::string& device_tag) {
   // Now read acknowledgement synchronously. Note: This isn't thread safe.
   std::vector <uint8_t> returned_parameters;
   wts_error::error_type error = readAcknowledgement(wts_command::GET_DEVICE_TAG, returned_parameters);
-  device_tag = std::string(returned_parameters.begin(), returned_parameters.end());
+
+  if(error != wts_error::E_SUCCESS) {
+    return error;
+  }
+
+  system_info.device_tag = std::string(returned_parameters.begin(), returned_parameters.end());
   return error;
 
 }
 
-wts_error::error_type WTSDriver::readDeviceTemperature(int& temperature) {
+wts_error WTSDriver::readDeviceTemperature(int& temperature) {
+
+  if(isPeriodicFrameAcqRunning()) {
+    return wts_error::E_OTHER;
+  }
 
   // First assemble the request message.
   std::vector <uint8_t> command_message;
@@ -158,13 +184,22 @@ wts_error::error_type WTSDriver::readDeviceTemperature(int& temperature) {
   // Now read acknowledgement synchronously. Note: This isn't thread safe.
   std::vector <uint8_t> returned_parameters;
   wts_error::error_type error = readAcknowledgement(wts_command::READ_DEVICE_TEMPERATURE, returned_parameters);
+
+  if(error != wts_error::E_SUCCESS) {
+    return error;
+  }
+
   temperature = returned_parameters[0] | (returned_parameters[1] << 8);
   temperature /= 10;
   return error;
 
 }
 
-wts_error::error_type WTSDriver::getSystemInformation() {
+wts_error WTSDriver::getSystemInformation() {
+
+  if(isPeriodicFrameAcqRunning()) {
+    return wts_error::E_OTHER;
+  }
 
   // First assemble the request message.
   std::vector <uint8_t> command_message;
@@ -183,17 +218,28 @@ wts_error::error_type WTSDriver::getSystemInformation() {
   std::vector <uint8_t> returned_parameters;
   wts_error::error_type error = readAcknowledgement(wts_command::GET_SYSTEM_INFO, returned_parameters);
 
+  if(error != wts_error::E_SUCCESS) {
+    return error;
+  }
+
+
   system_info = SystemInfo(returned_parameters);
   return error;
 
 }
 
-wts_error::error_type WTSDriver::readSingleFrame(Frame& frame, bool compression) {
+wts_error WTSDriver::readSingleFrame(Frame& frame, const bool compression) {
+
+  if(isPeriodicFrameAcqRunning()) {
+    return wts_error::E_OTHER;
+  }
 
   // First assemble the request message.
   std::vector <uint8_t> command_message;
+  uint8_t flags = compression ? 0x01 : 0x00;
 
-  appendPreambleCommandSize(wts_command::READ_SINGLE_FRAME, 0x0000, command_message);
+  appendPreambleCommandSize(wts_command::READ_SINGLE_FRAME, 0x0001, command_message);
+  command_message.push_back(flags);
 
   uint16_t checksum = calculateCRC(command_message);
 
@@ -207,13 +253,180 @@ wts_error::error_type WTSDriver::readSingleFrame(Frame& frame, bool compression)
   std::vector <uint8_t> returned_parameters;
   wts_error::error_type error = readAcknowledgement(wts_command::READ_SINGLE_FRAME, returned_parameters);
 
-  // TODO: Incomplete
+  if(error != wts_error::E_SUCCESS) {
+    return error;
+  }
+
+  // TODO: Incomplete Flags aren't assigned. Time stamp computation isn't exactly correct.
+  frame.header.stamp.nsec = ( (returned_parameters[0]) |
+                              (returned_parameters[1] << 8) |
+                              (returned_parameters[2] << 16) |
+                              (returned_parameters[3] << 24) )/100.00;
+
+  frame.full_scale_output = matrix_info.full_scale_output;
+  frame.cols = matrix_info.resolution_x;
+  frame.rows = matrix_info.resolution_y;
+  frame.cell_width = matrix_info.cell_width;
+  frame.cell_height = matrix_info.cell_height;
+  // Read all the cells
+  for(int i = 0; i < matrix_info.resolution_x * matrix_info.resolution_y; i++) {
+    uint16_t cell_data = (returned_parameters[2*i + 5]) | (returned_parameters[2*i + 6] << 8);
+    frame.data.push_back(cell_data);
+  }
 
   return error;
+}
+
+wts_error WTSDriver::startPeriodicFrameAcquisition(const bool compression, const uint16_t delay_ms) {
+
+  ROS_INFO("Start periodic frame acquisition.");
+
+  if(isPeriodicFrameAcqRunning()) {
+    ROS_WARN("Attempted to enable periodic frame acquisition when the driver thinks it's already running.");
+    return wts_error::E_SUCCESS;
+  }
+
+  // First assemble the request message.
+  std::vector <uint8_t> command_message;
+  uint8_t flags = compression ? 0x01 : 0x00;
+
+
+  appendPreambleCommandSize(wts_command::START_PERIODIC_FRAME_ACQ, 0x0003, command_message);
+  command_message.push_back(flags);
+  command_message.push_back(delay_ms & 0xFF);
+  command_message.push_back(delay_ms >> 8);
+
+  uint16_t checksum = calculateCRC(command_message);
+
+  std::vector <boost::asio::const_buffer> buffersToWrite;
+  buffersToWrite.push_back(boost::asio::buffer(command_message));
+  buffersToWrite.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
+
+  serial_comm_.writeConstBufferSequence(buffersToWrite);
+
+  // Now read acknowledgement synchronously. Note: This isn't thread safe.
+  std::vector <uint8_t> returned_parameters;
+  wts_error::error_type error = readAcknowledgement(wts_command::START_PERIODIC_FRAME_ACQ, returned_parameters);
+
+  if(error != wts_error::E_SUCCESS) {
+    return error;
+  }
+
+  ROS_INFO("Callbacks enabled now.");
+  // We need to setup a callback to read everything from now on.
+  boost::asio::async_read(
+      serial_comm_.serial(),
+      boost::asio::buffer(in_preamble_cmd_size),
+      boost::bind(&WTSDriver::preambleCommandSizeCallback, this, boost::asio::placeholders::error)
+  );
+
+  serial_comm_.io_service().run();
+
+  periodic_frame_acq_is_running = true;
+  return error;
+}
+
+void WTSDriver::preambleCommandSizeCallback(const boost::system::error_code& error) {
+
+  if(!error) {
+    wts_command::command_type cmd_id_returned = static_cast<wts_command::command_type> (in_preamble_cmd_size[3]);
+    uint16_t receivedSize = in_preamble_cmd_size[4] | (in_preamble_cmd_size[5] << 8);
+
+    in_frame_data.resize(receivedSize + 2);
+
+    if(cmd_id_returned == wts_command::FRAME_DATA) {
+
+      boost::asio::async_read(
+          serial_comm_.serial(),
+          boost::asio::buffer(in_frame_data),
+          boost::bind(&WTSDriver::frameMessageCallback, this, boost::asio::placeholders::error)
+      );
+
+    }
+    else {
+      boost::asio::async_read(
+          serial_comm_.serial(),
+          boost::asio::buffer(in_frame_data),
+          boost::bind(&WTSDriver::otherMessageCallback, this, boost::asio::placeholders::error)
+      );
+    }
+  }
+  else {
+    ROS_ERROR("[preambleCommandSizeCallback]: Got error: %s", error.message().c_str());
+  }
+}
+
+void WTSDriver::frameMessageCallback(const boost::system::error_code& error) {
+
+  if(!error) {
+
+    Frame frame;
+    // TODO: Incomplete Flags aren't assigned. Time stamp computation isn't exactly correct.
+    frame.header.stamp.nsec = ( (in_frame_data[0]) |
+        (in_frame_data[1] << 8) |
+        (in_frame_data[2] << 16) |
+        (in_frame_data[3] << 24) )/100.00;
+
+    frame.full_scale_output = matrix_info.full_scale_output;
+    frame.cols = matrix_info.resolution_x;
+    frame.rows = matrix_info.resolution_y;
+    frame.cell_width = matrix_info.cell_width;
+    frame.cell_height = matrix_info.cell_height;
+    // Read all the cells
+    for(int i = 0; i < matrix_info.resolution_x * matrix_info.resolution_y; i++) {
+      uint16_t cell_data = (in_frame_data[2*i + 5]) | (in_frame_data[2*i + 6] << 8);
+      frame.data.push_back(cell_data);
+    }
+
+    frames_pub_.publish(frame);
+
+    boost::asio::async_read(
+          serial_comm_.serial(),
+          boost::asio::buffer(in_preamble_cmd_size),
+          boost::bind(&WTSDriver::preambleCommandSizeCallback, this, boost::asio::placeholders::error)
+    );
+
+  }
+
+  else {
+    ROS_ERROR("[preambleCommandSizeCallback]: Got error: %s", error.message().c_str());
+  }
+}
+
+void WTSDriver::otherMessageCallback(const boost::system::error_code& error) {
 
 }
 
-wts_error::error_type WTSDriver::getMatrixInformation() {
+wts_error WTSDriver::stopPeriodicFrameAcquisition() {
+
+  // First assemble the request message.
+  std::vector <uint8_t> command_message;
+  appendPreambleCommandSize(wts_command::STOP_PERIODIC_FRAME_ACQ, 0x0000, command_message);
+
+  uint16_t checksum = calculateCRC(command_message);
+
+  std::vector <boost::asio::const_buffer> buffersToWrite;
+  buffersToWrite.push_back(boost::asio::buffer(command_message));
+  buffersToWrite.push_back(boost::asio::buffer(&checksum, sizeof(checksum)));
+
+  serial_comm_.writeConstBufferSequence(buffersToWrite);
+
+  // Now read acknowledgement synchronously. Note: This isn't thread safe.
+  std::vector <uint8_t> returned_parameters;
+  wts_error::error_type error = readAcknowledgement(wts_command::STOP_PERIODIC_FRAME_ACQ, returned_parameters);
+
+  if(error != wts_error::E_SUCCESS) {
+    return error;
+  }
+
+  periodic_frame_acq_is_running = false;
+
+  serial_comm_.io_service().stop();
+
+  return error;
+}
+
+wts_error WTSDriver::getMatrixInformation() {
 
   // First assemble the request message.
   std::vector <uint8_t> command_message;
@@ -232,22 +445,23 @@ wts_error::error_type WTSDriver::getMatrixInformation() {
   std::vector <uint8_t> returned_parameters;
   wts_error::error_type error = readAcknowledgement(wts_command::GET_MATRIX_INFO, returned_parameters);
 
-  resolution_x = (returned_parameters[0]) | (returned_parameters[1] << 8);
-  resolution_y = (returned_parameters[2]) | (returned_parameters[3] << 8);
-  cell_width = ( (returned_parameters[4]) | (returned_parameters[5] << 8) ) / 100000.00;
-  cell_height = ( (returned_parameters[6]) | (returned_parameters[7] << 8) ) / 100000.00;
-  full_scale_output = (returned_parameters[8]) | (returned_parameters[9] << 8);
+
+  if(error != wts_error::E_SUCCESS) {
+    return error;
+  }
+
+
+  matrix_info.resolution_x = (returned_parameters[0]) | (returned_parameters[1] << 8);
+  matrix_info.resolution_y = (returned_parameters[2]) | (returned_parameters[3] << 8);
+  matrix_info.cell_width = ( (returned_parameters[4]) | (returned_parameters[5] << 8) ) / 100000.00;
+  matrix_info.cell_height = ( (returned_parameters[6]) | (returned_parameters[7] << 8) ) / 100000.00;
+  matrix_info.full_scale_output = (returned_parameters[8]) | (returned_parameters[9] << 8);
 
   return error;
 }
 
 void WTSDriver::displayMatrixInformation() {
-  printf("\nResolution X: %d\nResolution Y: %d\nWidth: %f m\nHeight: %f m\nFull Scale Output: %d",
-      resolution_x,
-      resolution_y,
-      cell_width,
-      cell_height,
-      full_scale_output);
+  matrix_info.display();
 }
 
 void WTSDriver::displaySystemInformation() {
@@ -285,6 +499,7 @@ wts_error::error_type WTSDriver::readAcknowledgement(const wts_command::command_
 
     // We will read the checksum and ignore it.
     uint16_t checksumReceived;
+    ROS_INFO("READING CHECKSUM");
     serial_comm_.readFromSerialPort(checksumReceived);
 
 
@@ -296,7 +511,7 @@ wts_error::error_type WTSDriver::readAcknowledgement(const wts_command::command_
     checksumComputed = calculateCRC(returned_parameters, checksumComputed);
 
     if(checksumComputed != checksumReceived) {
-      std::cout << "{WARNING}:[GET_SENSOR_TYPE]: The checksums don't match!";
+      std::cout << "{WARNING}: The checksums don't match!";
     }
 
     return static_cast<wts_error::error_type> (status_code);
