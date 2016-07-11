@@ -103,10 +103,10 @@ bool SerialComm::writeToSerialPort (const T& dataToWrite) {
 
   boost::system::error_code err;
 
-  std::cout << "\nAttempting to send " << sizeof(dataToWrite) <<  " bytes...";
+  //std::cout << "\nAttempting to send " << sizeof(dataToWrite) <<  " bytes...";
   boost::asio::write(serial_, boost::asio::buffer(&dataToWrite, sizeof(dataToWrite)), err);
 
-  std::cout << "\nGot error: " << err.message();
+  //std::cout << "\nGot error: " << err.message();
   // 0 is success. Return false if it is not zero.
   if(err != 0) return false;
   else return true;

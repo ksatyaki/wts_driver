@@ -36,10 +36,10 @@ bool SerialComm::writeBytes (const std::vector <uint8_t>& bytesToWrite) {
 
   boost::system::error_code err;
 
-  std::cout << "\nAttempting to send " << sizeof(bytesToWrite) << " bytes...";
+  //std::cout << "\nAttempting to send " << sizeof(bytesToWrite) << " bytes...";
   boost::asio::write(serial_, boost::asio::buffer(bytesToWrite), err);
 
-  std::cout << "\nGot error: " << err.message();
+  //std::cout << "\nGot error: " << err.message();
   // 0 is success. Return false if it is not zero.
   if(err != 0) return false;
   else return true;
@@ -49,10 +49,10 @@ bool SerialComm::writeConstBufferSequence (const std::vector <boost::asio::const
 
   boost::system::error_code err;
 
-  std::cout << "\nAttempting to send a packet.";
+  //std::cout << "\nAttempting to send a packet.";
   boost::asio::write(serial_, buffersToWrite, err);
 
-  std::cout << "\nGot error: " << err.message();
+  //std::cout << "\nGot error: " << err.message();
   // 0 is success. Return false if it is not zero.
   if(err != 0) return false;
   else return true;
@@ -85,6 +85,7 @@ bool SerialComm::readBytes (std::vector <uint8_t>& bytesRead) {
 }
 
 SerialComm::~SerialComm() {
+  std::cout << "\nClosing the serial port.\n";
   serial_.close();
 }
 

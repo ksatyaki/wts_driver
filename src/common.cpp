@@ -144,16 +144,18 @@ SystemInfo::SystemInfo(const std::string& type_, const std::string& firmware_ver
 }
 
 void SystemInfo::display() {
-  printf("\n%s\n%s\n%s\n%d\n%s\n", type.c_str(), firmware_version.c_str() , hw_rev.c_str(), serial_number, device_tag.c_str());
+  ROS_INFO("Type: %s", type.c_str());
+  ROS_INFO("Firmware Version: %s", firmware_version.c_str());
+  ROS_INFO("Hardware revision: %s", hw_rev.c_str());
+  ROS_INFO("Serial Number: %d", serial_number);
 }
 
 void MatrixInfo::display() {
-  printf("\nResolution X: %d\nResolution Y: %d\nWidth: %f m\nHeight: %f m\nFull Scale Output: %d",
-      resolution_x,
-      resolution_y,
-      cell_width,
-      cell_height,
-      full_scale_output);
+  ROS_INFO("Resolution X: %d", resolution_x);
+  ROS_INFO("Resolution Y: %d", resolution_y);
+  ROS_INFO("Cell Width: %f m", cell_width);
+  ROS_INFO("Cell Height %f m", cell_height);
+  ROS_INFO("Full Scale Output: %d m", full_scale_output);
 }
 
 

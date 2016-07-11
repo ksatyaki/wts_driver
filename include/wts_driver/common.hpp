@@ -25,6 +25,8 @@
 #ifndef WTS_DRIVER_COMMON_HPP_
 #define WTS_DRIVER_COMMON_HPP_
 
+#include <ros/ros.h>
+
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -142,11 +144,6 @@ struct SystemInfo {
    * Serial number of the device we are talking to.
    */
   int serial_number;
-
-  /**
-   * Device tag.
-   */
-  std::string device_tag;
 
   /**
    * Print out this struct. Only for debugging.

@@ -33,10 +33,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-# A simple test executable.
-add_executable(simple_serial src/simple.cpp)
-target_link_libraries(simple_serial ${catkin_LIBRARIES})
-
 # Serial Communication using boost.
 add_library(serial_comm src/serial_comm.cpp)
 target_link_libraries(serial_comm ${Boost_LIBRARIES})

@@ -25,6 +25,7 @@
 #define WTS_DRIVER_WTS_DRIVER_HPP_
 
 #include <boost/function.hpp>
+#include <boost/thread.hpp>
 
 #include <wts_driver/serial_comm.hpp>
 #include <wts_driver/common.hpp>
@@ -76,9 +77,24 @@ private:
   SystemInfo system_info;
 
   /**
+   * Device tag.
+   */
+  std::string device_tag;
+
+  /**
+   * WTS Sensor type.
+   */
+  std::string sensor_type;
+
+  /**
    * Is periodic frame acquisition on?
    */
   bool periodic_frame_acq_is_running;
+
+  /**
+   * Is the ros publisher initialized.
+   */
+  bool ros_pub;
 
   /**
    * A static array for async_read of preamble, command id and size.
@@ -91,6 +107,16 @@ private:
   std::vector <uint8_t> in_frame_data;
 
   /**
+   * A thread to call io_service::run.
+   */
+  boost::thread spin_thread;
+
+  /**
+   * The latest acquired temperature.
+   */
+  float temperature;
+
+  /**
    * The CRC table used to calculate the checksum.
    */
   static const uint16_t crc_table[256];
@@ -101,11 +127,6 @@ public:
   // -------------------------- //
   // Data Acquisition Functions //
   // -------------------------- //
-
-  /**
-   * Read a single frame.
-   */
-  wts_error readSingleFrame(Frame& frame, const bool compression = false);
 
   /**
    * Start periodic acquisition of frames.
@@ -141,12 +162,12 @@ public:
   /**
    * Get sensor type.
    */
-  wts_error getSensorType(std::string& sensor_type);
+  wts_error getSensorType();
 
   /**
    * Get device temperature.
    */
-  wts_error readDeviceTemperature(int& temperature);
+  wts_error readDeviceTemperature();
 
   /**
    * Get the system information.
@@ -156,7 +177,8 @@ public:
   /**
    * Set device tag.
    */
-  wts_error setDeviceTag(const std::string& tag);
+  // wts_error setDeviceTag(const std::string& tag);
+  // No point in having this function. Set device tag from Windows UI.
 
   /**
    * Get device tag.
@@ -202,9 +224,20 @@ private:
    */
   void preambleCommandSizeCallback(const boost::system::error_code& error);
 
+  /**
+   * Serial port callback called after we read the command ID from the received message.
+   */
   void frameMessageCallback(const boost::system::error_code& error);
 
-  void otherMessageCallback(const boost::system::error_code& error);
+  /**
+   * Serial port callback called after we read the command ID from the received message.
+   */
+  void otherMessageCallback(const wts_command::command_type cmd_type, const boost::system::error_code& error);
+
+  /**
+   * Enable read callbacks.
+   */
+  void startReading();
 
 };
 
