@@ -323,7 +323,10 @@ void WTSDriver::frameMessageCallback(const boost::system::error_code& error) {
 
   if(!error) {
 
-    if(!periodic_frame_acq_is_running) periodic_frame_acq_is_running = true;
+    if(!periodic_frame_acq_is_running) {
+      ROS_INFO("Periodic Frame Acquisition was running before the driver enabled it.");
+      periodic_frame_acq_is_running = true;
+    }
 
     Frame frame;
     // TODO: Incomplete Flags aren't assigned. Time stamp computation isn't exactly correct.

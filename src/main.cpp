@@ -12,7 +12,9 @@ int main(int argn, char* args[]) {
   wts_driver.initROSPublisher(nh);
   wts_driver.startPeriodicFrameAcquisition();
 
-  ros::spin();
+  while(ros::ok()) {
+    usleep(100000);
+  }
 
   return 0;
 
