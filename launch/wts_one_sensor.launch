@@ -1,0 +1,3 @@
+<launch>
+  <node name="wts_node" type="wts_driver_node" pkg="wts_driver" args="/dev/ttyACM0"/>
+</launch>
