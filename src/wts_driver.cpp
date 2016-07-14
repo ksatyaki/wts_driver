@@ -330,10 +330,14 @@ void WTSDriver::frameMessageCallback(const boost::system::error_code& error) {
 
     Frame frame;
     // TODO: Incomplete Flags aren't assigned. Time stamp computation isn't exactly correct.
-    frame.header.stamp.nsec = ( (in_frame_data[0]) |
-        (in_frame_data[1] << 8) |
-        (in_frame_data[2] << 16) |
-        (in_frame_data[3] << 24) )/100.00;
+    float time_stamp = ( (in_frame_data[0]) |
+            (in_frame_data[1] << 8) |
+            (in_frame_data[2] << 16) |
+            (in_frame_data[3] << 24) )/1000.00;
+    frame.header.stamp.sec = static_cast<int> (floor(time_stamp));
+    frame.header.stamp.nsec = static_cast<int> ((time_stamp - floor(time_stamp))*1000000000);
+
+    //ROS_INFO("%.10f == %d.%d", time_stamp, frame.header.stamp.sec, frame.header.stamp.nsec);
 
     frame.full_scale_output = matrix_info.full_scale_output;
     frame.cols = matrix_info.resolution_x;
