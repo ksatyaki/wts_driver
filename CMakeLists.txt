@@ -24,6 +24,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES wts_driver serial_comm
   CATKIN_DEPENDS roscpp std_msgs message_runtime
+	DEPENDS Boost
 )
 
 
