@@ -41,6 +41,7 @@ target_link_libraries(serial_comm ${Boost_LIBRARIES})
 # The WTS Driver.
 add_library(wts_driver src/wts_driver.cpp src/common.cpp)
 target_link_libraries(wts_driver serial_comm ${catkin_LIBRARIES})
+add_dependencies(wts_driver wts_driver_gencpp)
 
 # The driver node
 add_executable(wts_driver_node src/main.cpp)
