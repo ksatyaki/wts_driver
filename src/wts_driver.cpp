@@ -530,7 +530,7 @@ wts_error::error_type WTSDriver::readAcknowledgement(const wts_command::command_
     checksumComputed = calculateCRC(returned_parameters, checksumComputed);
 
     if(checksumComputed != checksumReceived) {
-      std::cout << "{WARNING}: The checksums don't match!";
+      ROS_WARN("The CRC checksums don't match!");
     }
 
     return static_cast<wts_error::error_type> (status_code);

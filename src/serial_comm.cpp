@@ -61,10 +61,10 @@ bool SerialComm::writeConstBufferSequence (const std::vector <boost::asio::const
 bool SerialComm::readMutableBufferSequence (std::vector <boost::asio::mutable_buffer>& buffersRead) {
   boost::system::error_code err;
 
-  std::cout << "\nAttempting to read a packet.";
+  //std::cout << "\nAttempting to read a packet.";
   boost::asio::read(serial_, buffersRead, err);
 
-  std::cout << "\nGot error: " << err.message();
+  //std::cout << "\nGot error: " << err.message();
   // 0 is success. Return false if it is not zero.
   if(err != 0) return false;
   else return true;
@@ -74,10 +74,10 @@ bool SerialComm::readBytes (std::vector <uint8_t>& bytesRead) {
 
   boost::system::error_code err;
 
-  std::cout << "\nAttempting to read " << bytesRead.size() << " bytes...";
+  //std::cout << "\nAttempting to read " << bytesRead.size() << " bytes...";
   std::size_t s = boost::asio::read(serial_, boost::asio::buffer(bytesRead), err);
 
-  std::cout << "\nRead " << s << " bytes. Got error: " << err.message();
+  //std::cout << "\nRead " << s << " bytes. Got error: " << err.message();
   // 0 is success. Return false if it is not zero.
   if(err != 0) return false;
   else return true;
@@ -85,7 +85,7 @@ bool SerialComm::readBytes (std::vector <uint8_t>& bytesRead) {
 }
 
 SerialComm::~SerialComm() {
-  std::cout << "\nClosing the serial port.\n";
+  //std::cout << "\nClosing the serial port.\n";
   serial_.close();
 }
 

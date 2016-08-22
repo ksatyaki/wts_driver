@@ -118,10 +118,10 @@ bool SerialComm::readFromSerialPort (T& dataRead) {
 
   boost::system::error_code err;
 
-  std::cout << "\nAttempting to read " << sizeof(dataRead) <<  " bytes...";
+  //std::cout << "\nAttempting to read " << sizeof(dataRead) <<  " bytes...";
   boost::asio::read(serial_, boost::asio::buffer(&dataRead, sizeof(dataRead)), err);
 
-  std::cout << "\nGot error: " << err.message();
+  //std::cout << "\nGot error: " << err.message();
   // 0 is success. Return false if it is not zero.
   if(err != 0) return false;
   else return true;
