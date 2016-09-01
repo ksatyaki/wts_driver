@@ -46,3 +46,16 @@ add_dependencies(wts_driver wts_driver_gencpp)
 # The driver node
 add_executable(wts_driver_node src/main.cpp)
 target_link_libraries(wts_driver_node wts_driver ${catkin_LIBRARIES})
+
+
+## Installation of targets and launch files.
+
+install(TARGETS ${PROJECT_NAME}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+  PATTERN ".svn" EXCLUDE)
