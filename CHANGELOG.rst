@@ -2,8 +2,8 @@
 Changelog for package wts_driver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.3 (2016-09-01)
+------------------
 * Add install targets.
 * Contributors: Chittaranjan Swaminathan Srinivas
 
