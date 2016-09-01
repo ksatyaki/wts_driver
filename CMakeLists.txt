@@ -28,19 +28,15 @@ catkin_package(
 )
 
 
-
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS}
 )
 
-# Serial Communication using boost.
-add_library(serial_comm src/serial_comm.cpp)
-target_link_libraries(serial_comm ${Boost_LIBRARIES})
-
 # The WTS Driver.
-add_library(wts_driver src/wts_driver.cpp src/common.cpp)
-target_link_libraries(wts_driver serial_comm ${catkin_LIBRARIES})
+add_library(wts_driver src/wts_driver.cpp src/common.cpp src/serial_comm.cpp)
+target_link_libraries(wts_driver ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(wts_driver wts_driver_gencpp)
 
 # The driver node
@@ -50,7 +46,7 @@ target_link_libraries(wts_driver_node wts_driver ${catkin_LIBRARIES})
 
 ## Installation of targets and launch files.
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS wts_driver wts_driver_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
